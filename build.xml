@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+   <project name="ycsb" default="compile" basedir=".">
+   
+    <property name="src.dir"     value="src"/>
+    <property name="lib.dir"     value="lib"/>
+    <property name="doc.dir"     value="doc"/>
+
+    <property name="build.dir"   value="build"/>
+    <property name="classes.dir" value="${build.dir}/classes"/>
+    <property name="jar.dir"     value="${build.dir}/jar"/>
+   	<property name="oracle-java-1.6" location="/home/miyurud/software/jdk1.8.0_73"/>
+
+   	<!-- run on a specified JVM-->
+   	<macrodef name="exec-target">
+   		<attribute name="antfile" default="${ant.file}" />
+   		<attribute name="target" />
+   		<attribute name="jvm" default="${java.home}/bin/java"/>
+   		<sequential>
+   			<exec executable="ant">
+   				<env key="JAVACMD" value="@{jvm}" />
+   				<arg line='-f "@{antfile}"' />
+   				<arg line="@{target}" />
+   			</exec>
+   		</sequential>
+   	</macrodef>
+   	
+    <path id="build.classpath">
+        <fileset dir="${lib.dir}">
+          <include name="**/*.jar" />
+        </fileset>
+    </path>
+
+   	<target name="dbcompile-neo4j" depends="compile">
+   			<property name="db.dir" value="db/neo4j"/>
+   			<antcall target="dbcompile"/>
+   	</target>
+
+	<target name="dbcompile-fuseki" depends="compile">
+   			<property name="db.dir" value="db/fuseki"/>
+   			<antcall target="dbcompile"/>
+   	</target> 
+
+   	<target name="dbcompile-orientdb" depends="compile">
+   			<property name="db.dir" value="db/orientdb"/>
+   			<antcall target="dbcompile"/>
+   	</target>
+   	
+   	<target name="dbcompile-allegro" depends="compile">
+   			<property name="db.dir" value="db/allegrograph"/>
+   			<antcall target="dbcompile"/>
+   	</target>
+
+    <target name="dbcompile-titan" depends="compile">
+                    <property name="db.dir" value="db/titan"/>
+                    <antcall target="dbcompile"/>
+    </target>
+   		
+   	<exec-target target="cust-dbcompile-neo4j" jvm="${oracle-java-1.6}" />
+ 	
+ 	<target name="compile">
+        <mkdir dir="${classes.dir}"/>
+ 		 <property name="db.dir" value="db/titan"/>
+        <javac srcdir="${src.dir};${db.dir}/src" destdir="${classes.dir}" classpathref="build.classpath" deprecation="on">
+          <!--<compilerarg value="-XlInt:unchecked"/>-->
+        </javac>
+		<exec executable="./compile_x10.sh" />
+        <antcall target="makejar"/>
+    </target>
+
+	<target name="dbcompile">
+	    <path id="dbclasspath">
+	        <fileset dir="${db.dir}/lib" includes="**/*.jar"/>
+	        <fileset file="build/ycsb.jar"/>
+	    </path>
+		
+    	<mkdir dir="${classes.dir}"/>
+        <javac srcdir="${db.dir}/src" destdir="${classes.dir}" debug="true" classpathref="dbclasspath" deprecation="on">
+          <!--<compilerarg value="-XlInt:unchecked"/>-->
+        </javac>
+        <antcall target="makejar"/>
+    </target>
+
+   	<target name ="makejar" description="Create a jar for the YCSB project">
+		<jar jarfile="build/ycsb.jar" includes="**/*.class" basedir="${classes.dir}"/>
+	</target>
+   	
+    <target name="clean">
+       <delete includeemptydirs="true">
+          <fileset dir="build" includes="**/*"/>
+       </delete>
+    </target>
+
+   <target name="doc">
+      <javadoc destdir="${doc.dir}/javadoc" packagenames="com.yahoo.ycsb,com.yahoo.ycsb.workloads,com.yahoo.ycsb.db,com.yahoo.ycsb.generator,com.yahoo.ycsb.measurements"> 
+         <fileset dir="." defaultexcludes="yes">
+           <include name="src/**"/>
+           <include name="db/**/src/**"/>
+         </fileset>
+      </javadoc>
+   </target>
+
+</project>
+
